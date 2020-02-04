@@ -1,10 +1,8 @@
-class Item {
-  constructor(name, sellIn, quality) {
-    this.name = name;
-    this.sellIn = sellIn;
-    this.quality = quality;
-  }
-}
+
+
+const isMaxQuality = (quality) => quality >= 50
+const isMinQuality = (quality) => quality <= 0
+const isOverdue = (sellIn) => sellIn <= 0
 
 
 
@@ -12,28 +10,81 @@ const CATEGORY_BY_PRODUCT = {
   'Aged Brie': 'special',
   'Backstage passes to a TAFKAL80ETC concert': 'passes',
   'Sulfuras, Hand of Ragnaros': 'legendary',
+  'Conjured': 'mediocre'
 }
 
 
+const regularRule = ({ sellIn, quality, ...rest }) => ({
+  ...rest,
+  sellIn: sellIn - 1,
+  quality: isMinQuality(quality) ? 0 :
+    isMaxQuality(quality) ? 50 :
+      isOverdue(sellIn) ? (quality - 2) : (quality - 1)
+})
+
+
+const specialRule = ({ sellIn, quality, ...rest }) => ({
+  ...rest,
+  sellIn: sellIn - 1,
+  quality: isMinQuality(quality) ? 0 :
+    isMaxQuality(quality) ? 50 : quality + 1
+})
+
+
+const legendaryRule = ({ sellIn, quality, ...rest }) => ({
+  ...rest,
+  sellIn: 0,
+  quality: 80
+})
+
+
+const passesRule = ({ sellIn, quality, ...rest }) => {
+
+  if (isMinQuality(quality)) {
+    return {
+      ...rest,
+      sellIn: sellIn - 1,
+      quality: 0
+    }
+  }
+
+  let finalQuality
+
+  if (isOverdue(sellIn)) {
+    finalQuality = 0
+  } else {
+    if (sellIn <= 10 && sellIn >= 5) {
+      finalQuality = !isMaxQuality(quality) ? (quality + 2) : 50
+    }
+
+    if (sellIn <= 5 && sellIn >= 1) {
+      finalQuality = !isMaxQuality(quality) ? (quality + 3) : 50
+    }
+  }
+
+  return {
+    ...rest,
+    sellIn: sellIn - 1,
+    quality: typeof finalQuality !== "undefined" ?
+      finalQuality : quality + 1
+  }
+
+}
+
+const mediocreRule = ({ sellIn, quality, ...rest }) => ({
+  ...rest,
+  sellIn: sellIn - 1,
+  quality: isMinQuality(quality) ? 0 :
+    isMaxQuality(quality) ? 50 : quality - 2
+})
 
 const UPDATE_RULES_BY_CATEGORY = {
-  regular: (product) => ({
-
-  }),
-  special: (product) => ({
-
-  }),
-  legendary: (product) => ({
-
-  }),
-  passes: (pass) => ({
-
-  }),
-  conjured: (product) => ({
-
-  }),
+  mediocre: mediocreRule,
+  regular: regularRule,
+  special: specialRule,
+  legendary: legendaryRule,
+  passes: passesRule
 }
-
 
 
 const normalizeProducts = (products) => {
@@ -43,62 +94,32 @@ const normalizeProducts = (products) => {
   }))
 }
 
+
+
+class Item {
+  constructor(name, sellIn, quality) {
+    this.name = name;
+    this.sellIn = sellIn;
+    this.quality = quality;
+  }
+}
+
+
 class Shop {
   constructor(items = []) {
     this.items = normalizeProducts(items);
   }
   updateQuality() {
-    for (let i = 0; i < this.items.length; i++) {
-      if (this.items[i].name != 'Aged Brie' && this.items[i].name != 'Backstage passes to a TAFKAL80ETC concert') {
-        if (this.items[i].quality > 0) {
-          if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-            this.items[i].quality = this.items[i].quality - 1;
-          }
-        }
-      } else {
-        if (this.items[i].quality < 50) {
-          this.items[i].quality = this.items[i].quality + 1;
-          if (this.items[i].name == 'Backstage passes to a TAFKAL80ETC concert') {
-            if (this.items[i].sellIn < 11) {
-              if (this.items[i].quality < 50) {
-                this.items[i].quality = this.items[i].quality + 1;
-              }
-            }
-            if (this.items[i].sellIn < 6) {
-              if (this.items[i].quality < 50) {
-                this.items[i].quality = this.items[i].quality + 1;
-              }
-            }
-          }
-        }
-      }
-      if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-        this.items[i].sellIn = this.items[i].sellIn - 1;
-      }
-      if (this.items[i].sellIn < 0) {
-        if (this.items[i].name != 'Aged Brie') {
-          if (this.items[i].name != 'Backstage passes to a TAFKAL80ETC concert') {
-            if (this.items[i].quality > 0) {
-              if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-                this.items[i].quality = this.items[i].quality - 1;
-              }
-            }
-          } else {
-            this.items[i].quality = this.items[i].quality - this.items[i].quality;
-          }
-        } else {
-          if (this.items[i].quality < 50) {
-            this.items[i].quality = this.items[i].quality + 1;
-          }
-        }
-      }
-    }
-
-    return this.items;
+    return this.items.map(item => UPDATE_RULES_BY_CATEGORY[item.category](item))
   }
 }
 
 module.exports = {
   Item,
-  Shop
+  Shop,
+  isMaxQuality,
+  isMinQuality,
+  normalizeProducts,
+  CATEGORY_BY_PRODUCT,
+  UPDATE_RULES_BY_CATEGORY
 }
