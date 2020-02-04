@@ -110,7 +110,9 @@ class Shop {
     this.items = normalizeProducts(items);
   }
   updateQuality() {
-    return this.items.map(item => UPDATE_RULES_BY_CATEGORY[item.category](item))
+    this.items = this.items.map(item => UPDATE_RULES_BY_CATEGORY[item.category](item))
+
+    return this.items
   }
 }
 

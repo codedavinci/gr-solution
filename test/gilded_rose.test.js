@@ -189,6 +189,14 @@ describe("Gilded Rose", () => {
   })
 
   describe('Product Category Rules - Passes', () => {
+
+    it('should return zero quality if no quality', () => {
+      let passProd = new Item('Backstage passes to a TAFKAL80ETC concert', 5, 0)
+      let normalized = normalizeProducts([passProd])[0]
+
+      expect(normalized.quality).toBe(0)
+    })
+
     it('should increase quality by 2 when there are 10 days or less', () => {
       let passProduct = gildedRose.items[1]
 
@@ -223,8 +231,14 @@ describe("Gilded Rose", () => {
 
 
   describe('Shop - Integration', () => {
+    it('should return an empty shop if no items passed', () => {
+      let newShop = new Shop()
+      expect(newShop.items.length).toBe(0)
+    })
+
     it('should update all Items accordingly to its categories', () => {
       const updatedShop = gildedRose.updateQuality()
+
 
 
       let specialProd = updatedShop[0]
@@ -238,6 +252,7 @@ describe("Gilded Rose", () => {
       expect(legendaryProd.quality).toBe(80)
       expect(mediocreProduct.quality).toBe(23)
       expect(regularProduct.quality).toBe(20)
+
     })
   })
 
